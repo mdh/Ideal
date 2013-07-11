@@ -252,7 +252,7 @@ module Ideal
       raise ArgumentError, "The value for `#{key}' contains diacritical characters `#{string}'." if string =~ DIACRITICAL_CHARACTERS
     end
 
-    def add_signature(xml)
+    def add_signature_tag(xml)
       xml.Signature(xmlns: 'http://www.w3.org/2000/09/xmldsig#') do |xml|
         xml.SignedInfo do |xml|
           xml.CanonicalizationMethod(Algorithm: 'http://www.w3.org/2001/10/xml-exc-c14n#')
@@ -299,7 +299,7 @@ module Ideal
       requires!(options, :transaction_id)
 
       timestamp = created_at_timestamp
-      Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
+      xml = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
         xml.AcquirerStatusReq(xmlns: XML_NAMESPACE, version: API_VERSION) do |xml|
           xml.createDateTimestamp created_at_timestamp
           xml.Merchant do |xml|
@@ -309,9 +309,10 @@ module Ideal
           xml.Transaction do |xml|
             xml.transactionID options[:transaction_id]
           end
-          add_signature(xml)
+          add_signature_tag(xml)
         end
       end.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)
+      sign! xml
     end
 
     def build_directory_request
@@ -323,9 +324,10 @@ module Ideal
             xml.merchantID self.class.merchant_id
             xml.subID @sub_id
           end
-          add_signature(xml)
+          add_signature_tag(xml)
         end
       end.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)
+      sign! xml
     end
 
     def build_transaction_request(money, options)
@@ -338,7 +340,7 @@ module Ideal
 
       timestamp = created_at_timestamp
 
-      Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
+      xml = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
         xml.AcquirerTrxReq(xmlns: XML_NAMESPACE, version: API_VERSION) do |xml|
           xml.createDateTimestamp created_at_timestamp
           xml.Issuer do |xml|
@@ -358,9 +360,10 @@ module Ideal
             xml.description options[:description]
             xml.entranceCode options[:entrance_code]
           end
-          add_signature(xml)
+          add_signature_tag(xml)
         end
       end.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)
+      sign! xml
     end
 
     def log(thing, contents)
